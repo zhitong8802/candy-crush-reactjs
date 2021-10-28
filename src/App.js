@@ -7,6 +7,7 @@ import purpleCandy from './images/purple-candy.png'
 import redCandy from './images/red-candy.png'
 import yellowCandy from './images/yellow-candy.png'
 import blank from './images/blank.png'
+import Confetti from 'react-dom-confetti'
 
 const width = 8
 const candyColors = [
@@ -23,6 +24,33 @@ const App = () => {
     const [squareBeingDragged, setSquareBeingDragged] = useState(null)
     const [squareBeingReplaced, setSquareBeingReplaced] = useState(null)
     const [scoreDisplay, setScoreDisplay] = useState(0)
+    const [scoreThrehold, setScoreThrehold] = useState(100)
+    const [displayExplosion, setDisplayExplosion] = useState(100)
+
+    const config = {
+        angle: "360",
+        spread: "360",
+        startVelocity: "100",
+        elementCount: "200",
+        dragFriction: "0.15",
+        duration: "7000",
+        stagger: "5",
+        width: "26px",
+        height: "20px",
+        perspective: "100px",
+        colors: ["#a864fd", "#29cdff", "#78ff44", "#ff718d", "#fdff6a"]
+    }
+  
+    const startExplosin = useCallback(() => {
+        if (scoreDisplay >= scoreThrehold) {         
+            setScoreThrehold((score) => score + 100)
+            setDisplayExplosion(true)
+            return true
+        }
+
+        setDisplayExplosion(false)
+        return false
+    }, [currentColorArrangement, scoreDisplay, scoreThrehold])
 
     const checkForColumn = useCallback(() => {
         for (let i = 0; i <= 64; i++) {
@@ -40,13 +68,13 @@ const App = () => {
                 if (i > ((width * (width - c)) + width)) continue
 
                 if (column.every(square => currentColorArrangement[square] === decidedColor && !isBlank)) {
-                    setScoreDisplay((score) => score + c)
-                    column.forEach(square => currentColorArrangement[square] = blank)
+                    setScoreDisplay((score) => score + c)                              
+                    column.forEach(square => currentColorArrangement[square] = blank)                  
                     return true
                 }
             }
         }
-    }, [currentColorArrangement])
+    }, [currentColorArrangement, scoreDisplay, scoreThrehold])
 
     const checkForRow = useCallback(() => {
         for (let i = 0; i < 64; i++) {
@@ -64,13 +92,13 @@ const App = () => {
                 if ((i % width) > (width - r)) continue
 
                 if (row.every(square => currentColorArrangement[square] === decidedColor && !isBlank)) {
-                    setScoreDisplay((score) => score + r)
+                    setScoreDisplay((score) => score + r)                   
                     row.forEach(square => currentColorArrangement[square] = blank)
                     return true
                 }
             }
         }
-    }, [currentColorArrangement])
+    }, [currentColorArrangement, scoreDisplay, scoreThrehold])
 
     const moveIntoSquareBelow = useCallback(() => {
         for (let i = 0; i <= 55; i++) {
@@ -123,7 +151,7 @@ const App = () => {
                     isReset = false
                 }
             }
-                       
+
             if (isReset) {
                 currentColorArrangement[squareBeingReplacedId] = squareBeingReplaced.getAttribute('src')
                 currentColorArrangement[squareBeingDraggedId] = squareBeingDragged.getAttribute('src')
@@ -131,7 +159,6 @@ const App = () => {
             }
         }
     }
-
 
     const createBoard = () => {
         const randomColorArrangement = []
@@ -151,11 +178,11 @@ const App = () => {
             checkForColumn()
             checkForRow()
             moveIntoSquareBelow()
+            startExplosin()
             setCurrentColorArrangement([...currentColorArrangement])
         }, 100)
         return () => clearInterval(timer)
-    }, [checkForColumn, checkForRow, moveIntoSquareBelow, currentColorArrangement])
-
+    }, [checkForColumn, checkForRow, moveIntoSquareBelow, startExplosin, currentColorArrangement])
 
     return (
         <div className="app">
@@ -178,6 +205,7 @@ const App = () => {
                 ))}
             </div>
             <ScoreBoard score={scoreDisplay} />
+            <Confetti active={displayExplosion} config={config} />
         </div>
     )
 }
